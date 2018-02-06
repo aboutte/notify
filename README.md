@@ -35,17 +35,18 @@ aws iam create-access-key --user-name notify
 ### Create IAM Managed Policy
 
 ```
-aws iam create-policy --policy-name notify --description "SNS Publish access for notify" --policy-document '{
-                                                                                   "Version": "2012-10-17",
-                                                                                   "Statement": [
-                                                                                       {
-                                                                                           "Sid": "SNSPublishAccess",
-                                                                                           "Effect": "Allow",
-                                                                                           "Action": "sns:Publish",
-                                                                                           "Resource": "arn:aws:sns:us-east-1:349342608844:notify"
-                                                                                       }
-                                                                                   ]
-                                                                               }'
+aws iam create-policy --policy-name notify --description "SNS Publish access for notify" \
+--policy-document '{
+   "Version": "2012-10-17",
+   "Statement": [
+       {
+           "Sid": "SNSPublishAccess",
+           "Effect": "Allow",
+           "Action": "sns:Publish",
+           "Resource": "arn:aws:sns:us-east-1:349342608844:notify"
+       }
+   ]
+}'
 ```
 
 ### Attach IAM Managed Policy to User
@@ -71,4 +72,4 @@ The following example will result in a failure and an SNS notification will be g
 
 The following is an example email:
 
-![email](https://github.com/aboutte/notify/raw/master/assets/email.png "email")
+![email](https://github.com/aboutte/notify/blob/master/assests/email.png "email")

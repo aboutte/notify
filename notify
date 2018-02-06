@@ -1,0 +1,64 @@
+#!/usr/bin/env bash
+
+# https://habilis.net/cronic/
+
+set -eu
+
+ORIGINAL_DIR="$(pwd)"
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
+TMP=$(mktemp -d)
+OUT=$TMP/cronic.out
+ERR=$TMP/cronic.err
+TRACE=$TMP/cronic.trace
+TIMESTAMP=$(date '+%s')
+TOPIC=${TOPIC:-arn:aws:sns:us-east-1:349342608844:notify}
+REGION=${REGION:-us-east-1}
+COMMAND="$@"
+
+set +e
+"$@" >$OUT 2>$TRACE
+RESULT=$?
+set -e
+
+PATTERN="^${PS4:0:1}\\+${PS4:1}"
+if grep -aq "$PATTERN" $TRACE
+then
+    ! grep -av "$PATTERN" $TRACE > $ERR
+else
+    ERR=$TRACE
+fi
+
+if [ $RESULT -ne 0 -o -s "$ERR" ]
+    then
+
+    STACK_TRACE_DIR="$SCRIPT_DIR/stack-traces/$TIMESTAMP/"
+    mkdir -p $STACK_TRACE_DIR
+    declare -p > $STACK_TRACE_DIR/ENV
+
+    if [ -f $ERR ]; then
+       mv $ERR $STACK_TRACE_DIR/STDERR
+    fi
+    if [ -f $TRACE ]; then
+       mv $TRACE $STACK_TRACE_DIR/TRACE
+    fi
+    if [ -f $OUT ]; then
+       mv $OUT $STACK_TRACE_DIR/STDOUT
+    fi
+
+    aws --region $REGION sns publish --topic-arn $TOPIC --subject "CRON ERROR - $(date)"\
+    --message \
+    "
+    HOSTNAME: $HOSTNAME
+    DATE: $(date)
+
+    Detected failure or error output for the command:
+
+    $COMMAND
+
+    RESULT CODE: $RESULT
+
+    LOGS: $STACK_TRACE_DIR"
+fi
+
+rm -rf "$TMP"
